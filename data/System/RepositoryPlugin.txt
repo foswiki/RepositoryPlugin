@@ -1,0 +1,73 @@
+---+!! !RepositoryPlugin
+<!--
+One line description, required for extensions repository catalog.
+BuildContrib will fill in the SHORTDESCRIPTION with the value of
+$SHORTDESCRIPTION from the .pm module, or you can redefine it here if you
+prefer.
+   * Set SHORTDESCRIPTION = %$SHORTDESCRIPTION%
+-->
+%SHORTDESCRIPTION%
+
+<blockquote class="foswikiHelp">
+%X% *Caution!* This macro can expose file system path information that would not normally be revealed in a production site.<br />  This plugin is a *Developer Tool* and should be used with caution on production systems.
+</blockquote>
+
+%TOC%
+
+The REPO macro is used to report the status of a module or topic in the Source
+Repository.  The following information is reported:
+
+   * The real file name of the file, dereferencing any symbolic links.  (Supports pseudo-install)
+   * Interpreted git status of the file  (Modified, Added, Renamed, Deleted, Copied)
+   * The commit message from the most recent commit on the file.
+
+---++ Usage
+
+| =%<nop>REPO{}%= | Provide a git report on the topic expanding the macro |
+| =%<nop>REPO{module="Foswiki::Module"}%= | Provide a git report on the specified Foswiki module. |
+| =%<nop>REPO{web="Someweb" topic="SomeTopic"}%= | Provide a git report on the specified Web.Topic |
+
+---++ Examples
+
+---+++ Report for this topic
+If installed, the REPO macro will expand to the status of this topic file.
+<verbatim>
+%REPO{}%
+</verbatim>
+
+%REPO{}%
+
+---+++ Report for Main.WebHome
+<verbatim>
+%REPO{web="Main" topic="WebHome"}%
+</verbatim>
+
+%REPO{web="Main" topic="WebHome"}%
+
+---+++ Report for =Foswiki::Plugins::RepositoryPlugin=
+<verbatim>
+%REPO{module="Foswiki::Plugins::RepositoryPlugin"}%
+</verbatim>
+
+%REPO{module="Foswiki::Plugins::RepositoryPlugin"}%
+
+---++ Installation Instructions
+
+%$INSTALL_INSTRUCTIONS%
+
+---++ Info
+
+Many thanks to the following sponsors for supporting this work:
+   * Acknowledge any sponsors here
+
+|  Author(s): | |
+|  Copyright: | &copy; |
+|  License: | [[http://www.gnu.org/licenses/gpl.html][GPL (Gnu General Public License)]] |
+|  Release: | %$RELEASE% |
+|  Version: | %$VERSION% |
+|  Change History: | <!-- versions below in reverse order -->&nbsp; |
+|  Dependencies: | %$DEPENDENCIES% |
+|  Home page: | http://foswiki.org/bin/view/Extensions/RepositoryPlugin |
+|  Support: | http://foswiki.org/bin/view/Support/RepositoryPlugin |
+
+<!-- Do _not_ attempt to edit this topic; it is auto-generated. -->

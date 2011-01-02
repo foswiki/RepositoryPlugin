@@ -1,0 +1,5 @@
+# Release manifest for RepositoryPlugin
+data/System/RepositoryPlugin.txt 0644 Documentation
+data/System/RepoPerlDoc.txt 0644 Version of PerlDoc topic with repository information
+lib/Foswiki/Plugins/RepositoryPlugin.pm 0644 Perl module
+

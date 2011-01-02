@@ -1,0 +1,9 @@
+%META:TOPICINFO{author="ProjectContributor" date="1290819795" format="1.1" version="$Rev$"}%
+%META:TOPICPARENT{name="DeveloperDocumentationCategory"}%
+%IF{
+    "'%URLPARAM{"module"}%'=''"
+    then="<form class='foswikiForm' ><div class='foswikiFormSteps'><div class='foswikiFormStep'><label for='module'>Perl Module</label> <input type='text' name='module' id='module' value='%URLPARAM{module}%' class='foswikiInputField foswikiFocus' /> <input type='submit' class='foswikiSubmit' /></div></div></form>No module was specified. Check [[DevelopingPlugins][Developing plugins]] and [[Foswiki:Development.DevelopersBible][Developer's Bible]] for more information."
+}%
+---+!! %URLPARAM{module}%
+%REPO{module="%URLPARAM{module}%"}%
+%INCLUDE{"doc:%URLPARAM{module}%" level="1"}%
