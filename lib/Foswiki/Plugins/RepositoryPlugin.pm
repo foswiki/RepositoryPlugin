@@ -159,8 +159,13 @@ sub _REPO {
     $absfile ||= $thisfile; 
     my $texit;
 
+    my $repoRoot = _findRepoRoot ( $absfile );
+    return "*Unable to find git root:* =$absfile= " unless ($repoRoot);
+
+    my $repoLoc = "--git-dir=$repoRoot/.git --work-tree=$repoRoot";
+
     (my $topicStatus, $texit) = 
-      Foswiki::Sandbox->sysCommand( "$gitbin status --porcelain  $absfile ",
+      Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc status --porcelain  $absfile ",
              );
 
     $topicStatus = substr( $topicStatus, 0, 2);
@@ -177,11 +182,11 @@ sub _REPO {
                :                                   'unknown';
 
     (my $topicinfo, $texit) = 
-      Foswiki::Sandbox->sysCommand( "$gitbin log -1  $absfile ",
+      Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc log -1  $absfile ",
              );
 
     my $report =
-        "*Repo file:* =$absfile= \n\n";
+        "*Repo file:* =$absfile= \n\n*Repo root:* $repoRoot\n\n";
  
     $report .= "*File Status:* ($topicStatus) - $status\n\n";
 
@@ -194,13 +199,13 @@ sub _REPO {
 
 
     my ( $gitinfo, $gexit ) =
-      Foswiki::Sandbox->sysCommand( "$gitbin svn info ",
+      Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc svn info ",
              );
 
     $repoInfo{type} = 'git' unless ($gexit || $gitinfo =~ m/Not a git repository/);
 
     my ( $svninfo, $sexit ) =
-      Foswiki::Sandbox->sysCommand( "$svnbin info ",
+      Foswiki::Sandbox->sysCommand( "$svnbin $repoLoc info ",
              );
     $repoInfo{type} = 'svn' unless ($sexit || $svninfo =~ m/not a working copy/);
 
@@ -269,6 +274,26 @@ sub _REPO {
        return $repoInfo{type};
        }
 
+}
+
+sub _findRepoRoot {
+
+    my $repoFile = shift;    # full path of a file in repo
+
+    my ($vol, $dir, $file) = File::Spec->splitpath( $repoFile );
+    my @dirs = File::Spec->splitdir( $dir );
+    my $repoRoot;
+
+    while ( scalar @dirs > 1 ) {
+       $repoRoot = File::Spec->catdir( @dirs ); 
+       #print STDERR "Trying $repoRoot \n";
+       last if (-d "$repoRoot/.git");
+       pop(@dirs);
+    }
+
+    return $repoRoot if (-d "$repoRoot/.git");
+
+    return 0;
 }
 
 1;
