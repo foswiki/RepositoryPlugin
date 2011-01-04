@@ -30,24 +30,22 @@ Repository.  The following information is reported:
 ---++ Examples
 
 ---+++ Report for this topic
-If installed, the REPO macro will expand to the status of this topic file.
-<verbatim>
-%REPO{}%
-</verbatim>
+If installed, the ==%<nop>REPO{}%== macro will expand to the status of this topic file - =%WEB%/%TOPIC%.txt=.
 
 %REPO{}%
+
+---+++ =git svn info= report for this topic's repository
+If installed, the ==%<nop>REPO{"svninfo"}%== report will expand to the svn information about the repository that contains this topic.
+
+%REPO{"svninfo"}%
 
 ---+++ Report for Main.WebHome
-<verbatim>
-%REPO{web="Main" topic="WebHome"}%
-</verbatim>
+The ==%<nop>REPO{web="Main" topic="WebHome"}%== (or alternate form ==%<nop>REPO{topic="Main.WebHome"}%== ) expands to a report on the specified topic file.
 
-%REPO{web="Main" topic="WebHome"}%
+%REPO{topic="Main.WebHome"}%
 
 ---+++ Report for =Foswiki::Plugins::RepositoryPlugin=
-<verbatim>
-%REPO{module="Foswiki::Plugins::RepositoryPlugin"}%
-</verbatim>
+The ==%<nop>REPO{module="Foswiki::Plugins::RepositoryPlugin"}%== provides a report on the Plugin module implementing the %REPO macro. Note that an alternative to [[%SYSTEMWEB%.PerlDoc]] - [[%SYSTEMWEB%.RepoPerlDoc]] is provided with this plugin.
 
 %REPO{module="Foswiki::Plugins::RepositoryPlugin"}%
 
@@ -57,11 +55,8 @@ If installed, the REPO macro will expand to the status of this topic file.
 
 ---++ Info
 
-Many thanks to the following sponsors for supporting this work:
-   * Acknowledge any sponsors here
-
-|  Author(s): | |
-|  Copyright: | &copy; |
+|  Author(s): | Foswiki:Main.GeorgeClark,  Foswiki Contributors |
+|  Copyright: | &copy; Foswiki Contibutors |
 |  License: | [[http://www.gnu.org/licenses/gpl.html][GPL (Gnu General Public License)]] |
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |

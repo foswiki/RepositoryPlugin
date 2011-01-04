@@ -25,6 +25,9 @@ use strict;
 
 require Foswiki::Func;       # The plugins API
 require Foswiki::Plugins;    # For the API version
+use Cwd;
+
+#
 
 # $VERSION is referred to by Foswiki, and is the only global variable that
 # *must* exist in this package.
@@ -41,7 +44,7 @@ our $RELEASE = '0.1';
 # Short description of this plugin
 # One line description, is shown in the %SYSTEMWEB%.TextFormattingRules topic:
 our $SHORTDESCRIPTION =
-  'Repo Plugin - Displays information about the repository if running from a git or svn checkout';
+'Repo Plugin - Displays information about the repository if running from a git or svn checkout';
 
 # You must set $NO_PREFS_IN_TOPIC to 0 if you want your plugin to use
 # preferences set in the plugin topic. This is required for compatibility
@@ -52,7 +55,7 @@ our $SHORTDESCRIPTION =
 # can be defined in your %USERSWEB%.SitePreferences and overridden at the web
 # and topic level.
 our $NO_PREFS_IN_TOPIC = 1;
-our $REPO_TYPE = '';            # Global - can be cached by persistent perl
+our $REPO_TYPE         = '';    # Global - can be cached by persistent perl
 
 my $svnbin;
 my $gitbin;
@@ -89,8 +92,7 @@ sub initPlugin {
     $rootdir = $Foswiki::cfg{Plugins}{RepositoryPlugin}{rootDir}
       || '../';
 
-
-    Foswiki::Func::registerTagHandler( 'REPO',    \&_REPO );
+    Foswiki::Func::registerTagHandler( 'REPO', \&_REPO );
 
     # Plugin correctly initialized
     return 1;
@@ -115,8 +117,9 @@ sub _REPO {
 
     my $module = $params->{module} || '';
 
-    my $web = $params->{web} || $theWeb;
-    my $topic = $params->{topic} || $theTopic;
+    my $web     = $params->{web}      || $theWeb;
+    my $topic   = $params->{topic}    || $theTopic;
+    my $default = $params->{_DEFAULT} || '';
 
     if ( Scalar::Util::tainted($web) ) {
         $web = Foswiki::Sandbox::untaint( $web,
@@ -128,12 +131,18 @@ sub _REPO {
             \&Foswiki::Sandbox::validateTopicName );
     }
 
-    return '<blockquote class="foswikiAlert"> %X% Error:  =module= and =web / topic= parameters cannot be combined. </blockquote>' if ($module && ($params->{web} || $params->{topic}) );
+    ( $web, $topic ) = Foswiki::Func::normalizeWebTopicName( $web, $topic );
+
+    return
+'<blockquote class="foswikiAlert"> %X% Error:  =module= and =web / topic= parameters cannot be combined. </blockquote>'
+      if ( $module && ( $params->{web} || $params->{topic} ) );
 
     my $thisfile;
 
     if ($module) {
-        return '<blockquote class="foswikiAlert"> %X% Error:  Only Foswiki modules can be queried </blockquote>' unless ($module =~ m/^Foswiki/);
+        return
+'<blockquote class="foswikiAlert"> %X% Error:  Only Foswiki modules can be queried </blockquote>'
+          unless ( $module =~ m/^Foswiki/ );
         $module =~ s/[^\w:]//g;
 
         $module =~ s#::#/#g;
@@ -145,7 +154,7 @@ sub _REPO {
         }
     }
     else {
-        $thisfile = $Foswiki::cfg{DataDir}.'/'.$web.'/'.$topic.'.txt';
+        $thisfile = $Foswiki::cfg{DataDir} . '/' . $web . '/' . $topic . '.txt';
     }
 
     my $absfile;
@@ -156,123 +165,124 @@ sub _REPO {
         $absfile ||= '';
     }
 
-    $absfile ||= $thisfile; 
-    my $texit;
+    $absfile ||= $thisfile;
+    my $exit;
 
-    my $repoRoot = _findRepoRoot ( $absfile );
+    my $repoRoot = _findRepoRoot($absfile);
     return "*Unable to find git root:* =$absfile= " unless ($repoRoot);
 
     my $repoLoc = "--git-dir=$repoRoot/.git --work-tree=$repoRoot";
 
-    (my $topicStatus, $texit) = 
-      Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc status --porcelain  $absfile ",
-             );
+    if ( $default eq 'svninfo' ) {
+        my ($curdir) = getcwd =~ m/^(.*)$/;
+        chdir($repoRoot);
+        ( my $repoInfo, $exit ) =
+          Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc svn info", );
+        chdir($curdir);
+        my $report .= " " . '<verbatim>' . $repoInfo . '</verbatim>'
+          unless $exit;
 
-    $topicStatus = substr( $topicStatus, 0, 2);
+        return $report;
+    }
 
-    return "*File not known to git:* =$absfile= " if ($topicStatus eq '??');
+    ( my $topicStatus, $exit ) = Foswiki::Sandbox->sysCommand(
+        "$gitbin $repoLoc status --porcelain  $absfile ",
+    );
 
-    my $status = $topicStatus =~ m/\ [MD]/       ? 'Modified, not updated in index'
-               : $topicStatus =~ m/M[\ MD]/      ? 'updated in index'
-               : $topicStatus =~ m/A[\ MD]/      ? 'added to index'
-               : $topicStatus =~ m/D[\ M]/       ? 'deleted from index'
-               : $topicStatus =~ m/R[\ MD]/      ? 'renamed in index'
-               : $topicStatus =~ m/C[\ MD]/      ? 'copied in index'
-               : $topicStatus eq ''              ? 'up to date'
-               :                                   'unknown';
+    $topicStatus = substr( $topicStatus, 0, 2 );
 
-    (my $topicinfo, $texit) = 
-      Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc log -1  $absfile ",
-             );
+    return "*File not known to git:* =$absfile= " if ( $topicStatus eq '??' );
 
-    my $report =
-        "*Repo file:* =$absfile= \n\n*Repo root:* $repoRoot\n\n";
- 
+    my $status =
+        $topicStatus =~ m/\ [MD]/  ? 'Modified, not updated in index'
+      : $topicStatus =~ m/M[\ MD]/ ? 'updated in index'
+      : $topicStatus =~ m/A[\ MD]/ ? 'added to index'
+      : $topicStatus =~ m/D[\ M]/  ? 'deleted from index'
+      : $topicStatus =~ m/R[\ MD]/ ? 'renamed in index'
+      : $topicStatus =~ m/C[\ MD]/ ? 'copied in index'
+      : $topicStatus eq '' ? 'up to date'
+      :                      'unknown';
+
+    ( my $topicinfo, $exit ) =
+      Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc log -1  $absfile ", );
+
+    my $report = "*Repo file:* =$absfile= \n\n*Repo root:* $repoRoot\n\n";
+
     $report .= "*File Status:* ($topicStatus) - $status\n\n";
 
-    $report .= "*Last Commit:* \n"
-        . '<verbatim>'
-        . $topicinfo
-        . '</verbatim>' unless $texit;
+    $report .= "*Last Commit:* \n" . '<verbatim>' . $topicinfo . '</verbatim>'
+      unless $exit;
 
     return $report;
 
-
     my ( $gitinfo, $gexit ) =
-      Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc svn info ",
-             );
+      Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc svn info ", );
 
-    $repoInfo{type} = 'git' unless ($gexit || $gitinfo =~ m/Not a git repository/);
+    $repoInfo{type} = 'git'
+      unless ( $gexit || $gitinfo =~ m/Not a git repository/ );
 
     my ( $svninfo, $sexit ) =
-      Foswiki::Sandbox->sysCommand( "$svnbin $repoLoc info ",
-             );
-    $repoInfo{type} = 'svn' unless ($sexit || $svninfo =~ m/not a working copy/);
+      Foswiki::Sandbox->sysCommand( "$svnbin $repoLoc info ", );
+    $repoInfo{type} = 'svn'
+      unless ( $sexit || $svninfo =~ m/not a working copy/ );
 
-
-#    if ($repoInfo->{type} eq 'svn') {
-#        $svninfo =~ /Path: (
-#    Path: .
-#    URL: http://svn.twiki.org/svn/twiki/trunk/core
-#    Repository Root: http://svn.twiki.org/svn
-#    Repository UUID: a00a5322-12db-0310-a70b-8735589c885e
-#    Revision: 19150
-#    Node Kind: directory
-#    Schedule: normal
-#    Last Changed Author: PeterThoeny
-#    Last Changed Rev: 19140
-#    Last Changed Date: 2010-06-27 02:42:03 -0400 (Sun, 27 Jun 2010)
-#
-#    gac@cardinal: /data/gac/SVN/twiki/core $ cd -
-#    /data/gac/SVN/twiki
-#    gac@cardinal: /data/gac/SVN/twiki $ cd /var/www/foswiki/trunk/
-#    gac@cardinal: /var/www/foswiki/trunk (Item9238-BuildContrib)$ git svn info
-#    Path: .
-#    URL: http://svn.foswiki.org/trunk
-#    Repository Root: http://svn.foswiki.org
-#    Repository UUID: 0b4bb1d4-4e5a-0410-9cc4-b2b747904278
-#    Revision: 8030
-#    Node Kind: directory
-#    Schedule: normal
-#    Last Changed Author: CrawfordCurrie
-#    Last Changed Rev: 8030
-#    Last Changed Date: 2010-07-05 05:21:49 -0400 (Mon, 05 Jul 2010)
-#
-
-
+ #    if ($repoInfo->{type} eq 'svn') {
+ #        $svninfo =~ /Path: (
+ #    Path: .
+ #    URL: http://svn.twiki.org/svn/twiki/trunk/core
+ #    Repository Root: http://svn.twiki.org/svn
+ #    Repository UUID: a00a5322-12db-0310-a70b-8735589c885e
+ #    Revision: 19150
+ #    Node Kind: directory
+ #    Schedule: normal
+ #    Last Changed Author: PeterThoeny
+ #    Last Changed Rev: 19140
+ #    Last Changed Date: 2010-06-27 02:42:03 -0400 (Sun, 27 Jun 2010)
+ #
+ #    gac@cardinal: /data/gac/SVN/twiki/core $ cd -
+ #    /data/gac/SVN/twiki
+ #    gac@cardinal: /data/gac/SVN/twiki $ cd /var/www/foswiki/trunk/
+ #    gac@cardinal: /var/www/foswiki/trunk (Item9238-BuildContrib)$ git svn info
+ #    Path: .
+ #    URL: http://svn.foswiki.org/trunk
+ #    Repository Root: http://svn.foswiki.org
+ #    Repository UUID: 0b4bb1d4-4e5a-0410-9cc4-b2b747904278
+ #    Revision: 8030
+ #    Node Kind: directory
+ #    Schedule: normal
+ #    Last Changed Author: CrawfordCurrie
+ #    Last Changed Rev: 8030
+ #    Last Changed Date: 2010-07-05 05:21:49 -0400 (Mon, 05 Jul 2010)
+ #
 
     my $cmd = $params->{_DEFAULT} || '';
 
     if ( $cmd eq 'date' ) {
         my ( $output, $exit ) =
-          Foswiki::Sandbox->sysCommand( "$gitbin log -1 ",
-             );
+          Foswiki::Sandbox->sysCommand( "$gitbin log -1 ", );
         ($output) = $output =~ /^Date:\s+(.*)$/m;
         return "<verbatim>($output)</verbatim>";
     }
     elsif ( $cmd eq 'author' ) {
         my ( $output, $exit ) =
-          Foswiki::Sandbox->sysCommand( "$gitbin log -1 ",
-             );
+          Foswiki::Sandbox->sysCommand( "$gitbin log -1 ", );
         ($output) = $output =~ /^Author:\s+(.*)$/m;
         return "<verbatim>($output)</verbatim>";
     }
     elsif ( $cmd eq 'log' ) {
         my ( $output, $exit ) =
-          Foswiki::Sandbox->sysCommand( "$gitbin log -5 ",
-             );
+          Foswiki::Sandbox->sysCommand( "$gitbin log -5 ", );
         return "<verbatim>($output)</verbatim>";
     }
-    elsif ( $cmd eq 'branch') {
+    elsif ( $cmd eq 'branch' ) {
         my ( $output, $exit ) =
-          Foswiki::Sandbox->sysCommand( "$gitbin branch",
-             );
+          Foswiki::Sandbox->sysCommand( "$gitbin branch", );
         ($output) = $output =~ /^\*(.*)$/m;
         return "$output";
-   }
-   else {
-       return $repoInfo{type};
-       }
+    }
+    else {
+        return $repoInfo{type};
+    }
 
 }
 
@@ -280,18 +290,19 @@ sub _findRepoRoot {
 
     my $repoFile = shift;    # full path of a file in repo
 
-    my ($vol, $dir, $file) = File::Spec->splitpath( $repoFile );
-    my @dirs = File::Spec->splitdir( $dir );
+    my ( $vol, $dir, $file ) = File::Spec->splitpath($repoFile);
+    my @dirs = File::Spec->splitdir($dir);
     my $repoRoot;
 
     while ( scalar @dirs > 1 ) {
-       $repoRoot = File::Spec->catdir( @dirs ); 
-       #print STDERR "Trying $repoRoot \n";
-       last if (-d "$repoRoot/.git");
-       pop(@dirs);
+        $repoRoot = File::Spec->catdir(@dirs);
+
+        #print STDERR "Trying $repoRoot \n";
+        last if ( -d "$repoRoot/.git" );
+        pop(@dirs);
     }
 
-    return $repoRoot if (-d "$repoRoot/.git");
+    return $repoRoot if ( -d "$repoRoot/.git" );
 
     return 0;
 }
