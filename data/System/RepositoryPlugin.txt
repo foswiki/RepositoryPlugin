@@ -25,29 +25,36 @@ Repository.  The following information is reported:
 
 | =%<nop>REPO{}%= | Provide a git report on the topic expanding the macro |
 | =%<nop>REPO{module="Foswiki::Module"}%= | Provide a git report on the specified Foswiki module. |
-| =%<nop>REPO{web="Someweb" topic="SomeTopic"}%= | Provide a git report on the specified Web.Topic |
+| =%<nop>REPO{[web="Someweb"] topic="[Someweb.]SomeTopic"}%= | Provide a git report on the specified Web.Topic |
+| =%<nop>REPO{["svninfo" [module=] [topic=]}%= | Provide a =git svn info= report on the repo containing the topic or module |
+| =%<nop>REPO{["status" [module=] [topic=]}%= | Provide a =git status= report on the repo containing the topic or module |
 
 ---++ Examples
 
----+++ Report for this topic
+---+++ Report git status for this topic file =%SYSTEMWEB%/%TOPIC%.txt=
 If installed, the ==%<nop>REPO{}%== macro will expand to the status of this topic file - =%WEB%/%TOPIC%.txt=.
 
 %REPO{}%
 
----+++ =git svn info= report for this topic's repository
+---+++ Report =git svn info= for this topic's repository
 If installed, the ==%<nop>REPO{"svninfo"}%== report will expand to the svn information about the repository that contains this topic.
 
 %REPO{"svninfo"}%
 
----+++ Report for Main.WebHome
-The ==%<nop>REPO{web="Main" topic="WebHome"}%== (or alternate form ==%<nop>REPO{topic="Main.WebHome"}%== ) expands to a report on the specified topic file.
+---+++ Report git status for the topic file =%USERSWEB%.WebHome.txt=
+The ==%<nop>REPO{web="%USERSWEB%" topic="WebHome"}%== (or alternate form ==%<nop>REPO{topic="Main.WebHome"}%== ) expands to a report on the specified topic file.
 
 %REPO{topic="Main.WebHome"}%
 
----+++ Report for =Foswiki::Plugins::RepositoryPlugin=
+---+++ Report git status for =Foswiki::Plugins::RepositoryPlugin=
 The ==%<nop>REPO{module="Foswiki::Plugins::RepositoryPlugin"}%== provides a report on the Plugin module implementing the %REPO macro. Note that an alternative to [[%SYSTEMWEB%.PerlDoc]] - [[%SYSTEMWEB%.RepoPerlDoc]] is provided with this plugin.
 
 %REPO{module="Foswiki::Plugins::RepositoryPlugin"}%
+
+---+++ Report =git status= for the repository contatining =Foswiki::Plugins::RepositoryPlugin=
+The ==%<nop>REPO{"status" module="Foswiki::Plugins::RepositoryPlugin"}%== provides a report on the Plugin module implementing the %REPO macro. Untracked files are not reported.
+
+%REPO{"status" module="Foswiki::Plugins::RepositoryPlugin"}%
 
 ---++ Installation Instructions
 

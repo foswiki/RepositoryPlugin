@@ -184,37 +184,54 @@ sub _REPO {
 
         return $report;
     }
+    elsif ( $default eq 'status' ) {
+        #my ($curdir) = getcwd =~ m/^(.*)$/;
+        #chdir($repoRoot);
+        ( my $repoInfo, $exit ) =
+          Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc status -uno", );
+        #chdir($curdir);
+        my $report .= " " . '<verbatim>' . $repoInfo . '</verbatim>'
+          unless $exit;
 
-    ( my $topicStatus, $exit ) = Foswiki::Sandbox->sysCommand(
-        "$gitbin $repoLoc status --porcelain  $absfile ",
-    );
+        return $report;
+    }
+    else {
 
-    $topicStatus = substr( $topicStatus, 0, 2 );
+        ( my $fileStatus, $exit ) = Foswiki::Sandbox->sysCommand(
+            "$gitbin $repoLoc status --porcelain  $absfile ",
+        );
 
-    return "*File not known to git:* =$absfile= " if ( $topicStatus eq '??' );
+        $fileStatus = substr( $fileStatus, 0, 2 );
 
-    my $status =
-        $topicStatus =~ m/\ [MD]/  ? 'Modified, not updated in index'
-      : $topicStatus =~ m/M[\ MD]/ ? 'updated in index'
-      : $topicStatus =~ m/A[\ MD]/ ? 'added to index'
-      : $topicStatus =~ m/D[\ M]/  ? 'deleted from index'
-      : $topicStatus =~ m/R[\ MD]/ ? 'renamed in index'
-      : $topicStatus =~ m/C[\ MD]/ ? 'copied in index'
-      : $topicStatus eq '' ? 'up to date'
-      :                      'unknown';
+        return "*File not known to git:* =$absfile= " if ( $fileStatus eq '??' );
 
-    ( my $topicinfo, $exit ) =
-      Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc log -1  $absfile ", );
+        my $status =
+            $fileStatus =~ m/\ [MD]/  ? 'Modified, not updated in index'
+          : $fileStatus =~ m/M[\ MD]/ ? 'updated in index'
+          : $fileStatus =~ m/A[\ MD]/ ? 'added to index'
+          : $fileStatus =~ m/D[\ M]/  ? 'deleted from index'
+          : $fileStatus =~ m/R[\ MD]/ ? 'renamed in index'
+          : $fileStatus =~ m/C[\ MD]/ ? 'copied in index'
+          : $fileStatus eq '' ? 'up to date'
+          :                      'unknown';
 
-    my $report = "*Repo file:* =$absfile= \n\n*Repo root:* $repoRoot\n\n";
+        ( my $topicinfo, $exit ) =
+          Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc log -1  $absfile ", );
 
-    $report .= "*File Status:* ($topicStatus) - $status\n\n";
+        my $report = "*Repo file:* =$absfile= \n\n*Repo root:* $repoRoot\n\n";
 
-    $report .= "*Last Commit:* \n" . '<verbatim>' . $topicinfo . '</verbatim>'
-      unless $exit;
+        $report .= "*File Status:* ($fileStatus) - $status\n\n";
 
-    return $report;
+        $report .= "*Last Commit:* \n" . '<verbatim>' . $topicinfo . '</verbatim>'
+          unless $exit;
 
+        return $report;
+    }
+
+
+###
+### DEAD CODE 
+###
     my ( $gitinfo, $gexit ) =
       Foswiki::Sandbox->sysCommand( "$gitbin $repoLoc svn info ", );
 
@@ -226,34 +243,6 @@ sub _REPO {
     $repoInfo{type} = 'svn'
       unless ( $sexit || $svninfo =~ m/not a working copy/ );
 
- #    if ($repoInfo->{type} eq 'svn') {
- #        $svninfo =~ /Path: (
- #    Path: .
- #    URL: http://svn.twiki.org/svn/twiki/trunk/core
- #    Repository Root: http://svn.twiki.org/svn
- #    Repository UUID: a00a5322-12db-0310-a70b-8735589c885e
- #    Revision: 19150
- #    Node Kind: directory
- #    Schedule: normal
- #    Last Changed Author: PeterThoeny
- #    Last Changed Rev: 19140
- #    Last Changed Date: 2010-06-27 02:42:03 -0400 (Sun, 27 Jun 2010)
- #
- #    gac@cardinal: /data/gac/SVN/twiki/core $ cd -
- #    /data/gac/SVN/twiki
- #    gac@cardinal: /data/gac/SVN/twiki $ cd /var/www/foswiki/trunk/
- #    gac@cardinal: /var/www/foswiki/trunk (Item9238-BuildContrib)$ git svn info
- #    Path: .
- #    URL: http://svn.foswiki.org/trunk
- #    Repository Root: http://svn.foswiki.org
- #    Repository UUID: 0b4bb1d4-4e5a-0410-9cc4-b2b747904278
- #    Revision: 8030
- #    Node Kind: directory
- #    Schedule: normal
- #    Last Changed Author: CrawfordCurrie
- #    Last Changed Rev: 8030
- #    Last Changed Date: 2010-07-05 05:21:49 -0400 (Mon, 05 Jul 2010)
- #
 
     my $cmd = $params->{_DEFAULT} || '';
 
